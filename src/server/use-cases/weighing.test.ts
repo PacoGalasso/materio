@@ -17,8 +17,8 @@ beforeEach(async () => {
   fx = await createTestDatabase();
 });
 
-afterEach(() => {
-  fx.close();
+afterEach(async () => {
+  await fx.close();
 });
 
 function arrival(overrides: Partial<CreateWeighingInput> = {}): CreateWeighingInput {

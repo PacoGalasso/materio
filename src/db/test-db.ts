@@ -1,22 +1,36 @@
 /**
- * Throwaway database for use-case tests: real schema (migrations applied), minimal fixture.
- * A temporary file is used rather than `:memory:` because libsql opens a dedicated connection
- * per transaction, and separate connections never share an in-memory database.
+ * Fixture for use-case/integration tests: connects to the dedicated `matiere_test` Postgres
+ * database (migrated once by Vitest's `globalSetup`, see `./test-global-setup.ts`) and inserts
+ * a self-contained set of rows scoped to a fresh `organizationId`. Isolation between tests
+ * (including tests running in parallel workers) comes from that fresh id, not from a
+ * separate schema or database per test — every query in the app is already tenant-scoped,
+ * so unrelated fixtures never interfere. `close()` deletes everything it inserted.
  */
 import { randomUUID } from "node:crypto";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import path from "node:path";
+
+import { eq, inArray } from "drizzle-orm";
 
 import { createDatabase, type Database } from "./client";
-import { runMigrations } from "./migrate";
-import { materialPrices, materials, organizations, suppliers, yards } from "./schema";
+import {
+  materialPrices,
+  materials,
+  organizationMemberships,
+  organizations,
+  suppliers,
+  user,
+  yards,
+} from "./schema";
+
+const TEST_DATABASE_URL =
+  process.env.TEST_DATABASE_URL ?? "postgres://matiere:matiere@localhost:55432/matiere_test";
 
 export interface TestFixture {
   db: Database;
-  close: () => void;
+  close: () => Promise<void>;
   organizationId: string;
   yardId: string;
+  /** OWNER member of `organizationId`; use as the `actorUserId` for use-case calls. */
+  ownerUserId: string;
   supplierId: string;
   inactiveSupplierId: string;
   copperId: string;
@@ -25,12 +39,11 @@ export interface TestFixture {
 }
 
 export async function createTestDatabase(): Promise<TestFixture> {
-  const dir = mkdtempSync(path.join(tmpdir(), "matiere-test-"));
-  const { db, client } = await createDatabase(`file:${path.join(dir, "test.db")}`);
-  await runMigrations(db);
+  const { db, pool } = createDatabase(TEST_DATABASE_URL);
 
   const organizationId = randomUUID();
   const yardId = randomUUID();
+  const ownerUserId = randomUUID();
   const supplierId = randomUUID();
   const inactiveSupplierId = randomUUID();
   const copperId = randomUUID();
@@ -44,6 +57,15 @@ export async function createTestDatabase(): Promise<TestFixture> {
     ticketPrefix: "P",
     nextTicketNumber: 1,
   });
+  await db.insert(user).values({
+    id: ownerUserId,
+    name: "Test Owner",
+    email: `${ownerUserId}@test.matiere.invalid`,
+    emailVerified: true,
+  });
+  await db
+    .insert(organizationMemberships)
+    .values({ id: randomUUID(), organizationId, userId: ownerUserId, role: "OWNER" });
   await db
     .insert(yards)
     .values({ id: yardId, organizationId, name: "Site test", code: "TST", isDefault: true });
@@ -87,12 +109,14 @@ export async function createTestDatabase(): Promise<TestFixture> {
   await db.insert(materialPrices).values([
     {
       id: randomUUID(),
+      organizationId,
       materialId: copperId,
       purchasePriceCtsPerT: 615_000,
       effectiveFrom: new Date("2026-08-01T00:00:00Z"),
     },
     {
       id: randomUUID(),
+      organizationId,
       materialId: steelId,
       purchasePriceCtsPerT: 18_500,
       effectiveFrom: new Date("2026-08-01T00:00:00Z"),
@@ -101,12 +125,14 @@ export async function createTestDatabase(): Promise<TestFixture> {
 
   return {
     db,
-    close: () => {
-      client.close();
-      rmSync(dir, { recursive: true, force: true });
+    close: async () => {
+      await db.delete(organizations).where(eq(organizations.id, organizationId));
+      await db.delete(user).where(inArray(user.id, [ownerUserId]));
+      await pool.end();
     },
     organizationId,
     yardId,
+    ownerUserId,
     supplierId,
     inactiveSupplierId,
     copperId,

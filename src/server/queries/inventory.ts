@@ -11,6 +11,7 @@ import {
   type PriceUnit,
 } from "@/db/schema";
 import { stockValueCts } from "@/domain/inventory";
+import { isValidId } from "@/lib/id";
 
 export interface StockLine {
   materialId: string;
@@ -96,6 +97,7 @@ export async function listMovements(
   organizationId: string,
   options: { materialId?: string; limit?: number; since?: Date } = {},
 ): Promise<MovementRow[]> {
+  if (options.materialId && !isValidId(options.materialId)) return [];
   const db = await getDb();
   const conditions: SQL[] = [eq(inventoryMovements.organizationId, organizationId)];
   if (options.materialId) conditions.push(eq(inventoryMovements.materialId, options.materialId));
@@ -128,11 +130,20 @@ export async function listMovements(
 }
 
 /** Current stock of one material in grams (signed sum of its movements). */
-export async function getMaterialStockG(materialId: string): Promise<number> {
+export async function getMaterialStockG(
+  organizationId: string,
+  materialId: string,
+): Promise<number> {
+  if (!isValidId(materialId)) return 0;
   const db = await getDb();
   const [row] = await db
     .select({ quantityG: sql<number>`coalesce(sum(${inventoryMovements.quantityG}), 0)` })
     .from(inventoryMovements)
-    .where(eq(inventoryMovements.materialId, materialId));
+    .where(
+      and(
+        eq(inventoryMovements.organizationId, organizationId),
+        eq(inventoryMovements.materialId, materialId),
+      ),
+    );
   return row?.quantityG ?? 0;
 }

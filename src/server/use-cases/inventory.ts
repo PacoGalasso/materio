@@ -6,6 +6,7 @@ import { withTransaction, type Database } from "@/db/client";
 import { inventoryMovements, materials } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
 import { adjustmentMovement, dispatchMovement } from "@/domain/inventory";
+import { isValidId } from "@/lib/id";
 
 export interface DispatchInput {
   materialId: string;
@@ -22,17 +23,26 @@ export async function recordDispatch(
   yardId: string,
   input: DispatchInput,
 ): Promise<{ id: string }> {
+  if (!isValidId(input.materialId)) throw new DomainError("MATERIAL_NOT_FOUND");
   return withTransaction(db, async (tx) => {
+    // Locks the material row so two concurrent stock-affecting operations on it serialize
+    // instead of both reading the same stale sum (see src/db/client.ts withTransaction).
     const [material] = await tx
       .select({ id: materials.id })
       .from(materials)
       .where(and(eq(materials.organizationId, organizationId), eq(materials.id, input.materialId)))
+      .for("update")
       .limit(1);
     if (!material) throw new DomainError("MATERIAL_NOT_FOUND");
     const [stock] = await tx
       .select({ quantityG: sql<number>`coalesce(sum(${inventoryMovements.quantityG}), 0)` })
       .from(inventoryMovements)
-      .where(eq(inventoryMovements.materialId, input.materialId));
+      .where(
+        and(
+          eq(inventoryMovements.organizationId, organizationId),
+          eq(inventoryMovements.materialId, input.materialId),
+        ),
+      );
     const figures = dispatchMovement({
       quantityG: input.quantityG,
       unitValueCtsPerT: input.unitValueCtsPerT,
@@ -69,17 +79,24 @@ export async function recordAdjustment(
   yardId: string,
   input: AdjustmentInput,
 ): Promise<{ id: string }> {
+  if (!isValidId(input.materialId)) throw new DomainError("MATERIAL_NOT_FOUND");
   return withTransaction(db, async (tx) => {
     const [material] = await tx
       .select({ id: materials.id })
       .from(materials)
       .where(and(eq(materials.organizationId, organizationId), eq(materials.id, input.materialId)))
+      .for("update")
       .limit(1);
     if (!material) throw new DomainError("MATERIAL_NOT_FOUND");
     const [stock] = await tx
       .select({ quantityG: sql<number>`coalesce(sum(${inventoryMovements.quantityG}), 0)` })
       .from(inventoryMovements)
-      .where(eq(inventoryMovements.materialId, input.materialId));
+      .where(
+        and(
+          eq(inventoryMovements.organizationId, organizationId),
+          eq(inventoryMovements.materialId, input.materialId),
+        ),
+      );
     if ((stock?.quantityG ?? 0) + input.quantityG < 0) {
       throw new DomainError("STOCK_INSUFFICIENT", { field: "quantity" });
     }

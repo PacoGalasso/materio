@@ -12,5 +12,6 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts"],
     exclude: ["e2e/**", "node_modules/**"],
+    globalSetup: ["src/db/test-global-setup.ts"],
   },
 });

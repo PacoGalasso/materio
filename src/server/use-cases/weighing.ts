@@ -6,7 +6,12 @@ import { randomUUID } from "node:crypto";
 
 import { and, eq, sql } from "drizzle-orm";
 
-import { withTransaction, type Database, type DatabaseExecutor } from "@/db/client";
+import {
+  withTransaction,
+  type Database,
+  type DatabaseExecutor,
+  type Transaction,
+} from "@/db/client";
 import {
   inventoryMovements,
   materials,
@@ -26,6 +31,7 @@ import {
   normalizePlate,
   settleWeighing,
 } from "@/domain/weighing";
+import { isValidId } from "@/lib/id";
 import { zonedParts } from "@/lib/time";
 
 export interface CreateWeighingInput {
@@ -52,6 +58,7 @@ async function requireActiveSupplier(
   organizationId: string,
   supplierId: string,
 ) {
+  if (!isValidId(supplierId)) throw new DomainError("SUPPLIER_NOT_FOUND", { field: "supplierId" });
   const [supplier] = await db
     .select({ id: suppliers.id, isActive: suppliers.isActive })
     .from(suppliers)
@@ -67,6 +74,7 @@ async function requireActiveMaterial(
   organizationId: string,
   materialId: string,
 ) {
+  if (!isValidId(materialId)) throw new DomainError("MATERIAL_NOT_FOUND", { field: "materialId" });
   const [material] = await db
     .select({ id: materials.id, isActive: materials.isActive })
     .from(materials)
@@ -206,17 +214,24 @@ export interface CompleteWeighingInput {
   notes?: string;
 }
 
+/**
+ * Locks the ticket row (`FOR UPDATE`) so two concurrent completions/cancellations of the
+ * same ticket serialize: the second transaction blocks until the first commits, then sees
+ * the already-transitioned status and fails the transition check below instead of racing.
+ */
 async function requireTicket(
-  tx: DatabaseExecutor,
+  tx: Transaction,
   organizationId: string,
   ticketId: string,
 ): Promise<WeighingTicket> {
+  if (!isValidId(ticketId)) throw new DomainError("TICKET_NOT_FOUND");
   const [ticket] = await tx
     .select()
     .from(weighingTickets)
     .where(
       and(eq(weighingTickets.organizationId, organizationId), eq(weighingTickets.id, ticketId)),
     )
+    .for("update")
     .limit(1);
   if (!ticket) throw new DomainError("TICKET_NOT_FOUND");
   return ticket;

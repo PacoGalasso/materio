@@ -46,9 +46,9 @@ export default async function MaterialPage({ params }: PageProps) {
 
   const now = new Date();
   const [stockG, activity, prices, movements] = await Promise.all([
-    getMaterialStockG(material.id),
-    getMaterialActivity(material.id, now),
-    listPriceHistory(material.id),
+    getMaterialStockG(organization.id, material.id),
+    getMaterialActivity(organization.id, material.id, now),
+    listPriceHistory(organization.id, material.id),
     listMovements(organization.id, { materialId: material.id, limit: 100 }),
   ]);
   const valueCts = stockValueCts(stockG, material.currentPurchasePriceCtsPerT);

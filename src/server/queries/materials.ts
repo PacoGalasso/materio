@@ -9,6 +9,7 @@ import {
   type MaterialPrice,
 } from "@/db/schema";
 import { weightedAveragePriceCtsPerT } from "@/domain/inventory";
+import { isValidId } from "@/lib/id";
 
 export async function listMaterials(
   organizationId: string,
@@ -28,6 +29,7 @@ export async function getMaterial(
   organizationId: string,
   materialId: string,
 ): Promise<Material | null> {
+  if (!isValidId(materialId)) return null;
   const db = await getDb();
   const [row] = await db
     .select()
@@ -37,12 +39,22 @@ export async function getMaterial(
   return row ?? null;
 }
 
-export async function listPriceHistory(materialId: string, limit = 50): Promise<MaterialPrice[]> {
+export async function listPriceHistory(
+  organizationId: string,
+  materialId: string,
+  limit = 50,
+): Promise<MaterialPrice[]> {
+  if (!isValidId(materialId)) return [];
   const db = await getDb();
   return db
     .select()
     .from(materialPrices)
-    .where(eq(materialPrices.materialId, materialId))
+    .where(
+      and(
+        eq(materialPrices.organizationId, organizationId),
+        eq(materialPrices.materialId, materialId),
+      ),
+    )
     .orderBy(desc(materialPrices.effectiveFrom), desc(materialPrices.createdAt))
     .limit(limit);
 }
@@ -57,9 +69,19 @@ export interface MaterialActivity {
 
 /** 30-day purchase activity of a material, used on its detail page. */
 export async function getMaterialActivity(
+  organizationId: string,
   materialId: string,
   now: Date = new Date(),
 ): Promise<MaterialActivity> {
+  if (!isValidId(materialId)) {
+    return {
+      receivedLast30dG: 0,
+      receiptsLast30d: 0,
+      purchasedLast30dCts: 0,
+      averagePurchasePriceLast30dCtsPerT: null,
+      dispatchedLast30dG: 0,
+    };
+  }
   const db = await getDb();
   const since = new Date(now.getTime() - 30 * 24 * 3_600_000);
   const rows = await db
@@ -70,7 +92,11 @@ export async function getMaterialActivity(
     })
     .from(inventoryMovements)
     .where(
-      and(eq(inventoryMovements.materialId, materialId), gte(inventoryMovements.occurredAt, since)),
+      and(
+        eq(inventoryMovements.organizationId, organizationId),
+        eq(inventoryMovements.materialId, materialId),
+        gte(inventoryMovements.occurredAt, since),
+      ),
     );
 
   const receipts = rows.filter((row) => row.type === "receipt");

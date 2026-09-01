@@ -19,6 +19,7 @@ import {
   type Yard,
 } from "@/db/schema";
 import { normalizePlate } from "@/domain/weighing";
+import { isValidId } from "@/lib/id";
 
 export interface TicketRow {
   id: string;
@@ -125,8 +126,10 @@ export async function listTickets(
 
   if (filters.status && filters.status !== "all")
     conditions.push(eq(weighingTickets.status, filters.status));
-  if (filters.materialId) conditions.push(eq(weighingTickets.materialId, filters.materialId));
-  if (filters.supplierId) conditions.push(eq(weighingTickets.supplierId, filters.supplierId));
+  if (filters.materialId && isValidId(filters.materialId))
+    conditions.push(eq(weighingTickets.materialId, filters.materialId));
+  if (filters.supplierId && isValidId(filters.supplierId))
+    conditions.push(eq(weighingTickets.supplierId, filters.supplierId));
   if (filters.from) conditions.push(gte(weighingTickets.grossWeighedAt, filters.from));
   if (filters.to) conditions.push(lt(weighingTickets.grossWeighedAt, filters.to));
 
@@ -222,6 +225,7 @@ export async function getTicketDetail(
   organizationId: string,
   ticketId: string,
 ): Promise<TicketDetail | null> {
+  if (!isValidId(ticketId)) return null;
   const db = await getDb();
   const [row] = await db
     .select({

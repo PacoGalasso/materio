@@ -13,12 +13,12 @@ let fx: TestFixture;
 beforeEach(async () => {
   fx = await createTestDatabase();
   // getMaterialStockG reads through the app-wide handle; point it at the test database.
-  globalThis.__matiereDatabase = Promise.resolve({ db: fx.db, client: { close() {} } as never });
+  globalThis.__matiereDatabase = { db: fx.db, pool: {} as never };
 });
 
-afterEach(() => {
+afterEach(async () => {
   globalThis.__matiereDatabase = undefined;
-  fx.close();
+  await fx.close();
 });
 
 describe("inventory movements", () => {
@@ -30,7 +30,7 @@ describe("inventory movements", () => {
       occurredAt: new Date("2026-08-01T06:00:00Z"),
       note: "Inventaire d'ouverture",
     });
-    expect(await getMaterialStockG(fx.steelId)).toBe(10_000_000);
+    expect(await getMaterialStockG(fx.organizationId, fx.steelId)).toBe(10_000_000);
 
     await recordDispatch(fx.db, fx.organizationId, fx.yardId, {
       materialId: fx.steelId,
@@ -39,7 +39,7 @@ describe("inventory movements", () => {
       occurredAt: new Date("2026-08-02T06:00:00Z"),
       note: "Aciérie",
     });
-    expect(await getMaterialStockG(fx.steelId)).toBe(6_000_000);
+    expect(await getMaterialStockG(fx.organizationId, fx.steelId)).toBe(6_000_000);
 
     await expect(
       recordDispatch(fx.db, fx.organizationId, fx.yardId, {
@@ -60,7 +60,7 @@ describe("inventory movements", () => {
         note: "",
       }),
     ).rejects.toMatchObject({ code: "STOCK_INSUFFICIENT" });
-    expect(await getMaterialStockG(fx.steelId)).toBe(6_000_000);
+    expect(await getMaterialStockG(fx.organizationId, fx.steelId)).toBe(6_000_000);
   });
 
   it("rejects unknown materials", async () => {

@@ -480,6 +480,7 @@ export async function seedDemoWorkspace(
       materialSeeds.flatMap((material) =>
         material.history.map((entry) => ({
           id: randomUUID(),
+          organizationId,
           materialId: material.id,
           purchasePriceCtsPerT: entry.priceCtsPerT,
           effectiveFrom: entry.effectiveFrom,

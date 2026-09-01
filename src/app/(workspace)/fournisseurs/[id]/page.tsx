@@ -39,9 +39,9 @@ export default async function SupplierPage({ params, searchParams }: PageProps) 
   const page = Number.isFinite(pageRaw) && pageRaw >= 1 ? Math.floor(pageRaw) : 1;
   const now = new Date();
   const [vehicles, tickets, stats] = await Promise.all([
-    listSupplierVehicles(supplier.id),
+    listSupplierVehicles(organization.id, supplier.id),
     listTickets(organization.id, { supplierId: supplier.id, page, pageSize: 15 }),
-    getSupplierActivity(supplier.id),
+    getSupplierActivity(organization.id, supplier.id),
   ]);
   const address = [
     supplier.street,

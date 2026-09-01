@@ -2,6 +2,7 @@ import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
 import { suppliers, vehicles, weighingTickets, type Supplier, type Vehicle } from "@/db/schema";
+import { isValidId } from "@/lib/id";
 
 export interface SupplierRow extends Supplier {
   ticketCount: number;
@@ -60,7 +61,13 @@ export interface SupplierActivity {
 }
 
 /** Ticket activity of one supplier (detail page). */
-export async function getSupplierActivity(supplierId: string): Promise<SupplierActivity> {
+export async function getSupplierActivity(
+  organizationId: string,
+  supplierId: string,
+): Promise<SupplierActivity> {
+  if (!isValidId(supplierId)) {
+    return { ticketCount: 0, completedCount: 0, lastDeliveryAt: null, totalPurchasedCts: 0, totalReceivedG: 0 };
+  }
   const db = await getDb();
   const [row] = await db
     .select({
@@ -71,7 +78,12 @@ export async function getSupplierActivity(supplierId: string): Promise<SupplierA
       totalReceivedG: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.netWeightG} else 0 end), 0)`,
     })
     .from(weighingTickets)
-    .where(eq(weighingTickets.supplierId, supplierId));
+    .where(
+      and(
+        eq(weighingTickets.organizationId, organizationId),
+        eq(weighingTickets.supplierId, supplierId),
+      ),
+    );
   return {
     ticketCount: row?.ticketCount ?? 0,
     completedCount: row?.completedCount ?? 0,
@@ -88,6 +100,7 @@ export async function getSupplier(
   organizationId: string,
   supplierId: string,
 ): Promise<Supplier | null> {
+  if (!isValidId(supplierId)) return null;
   const db = await getDb();
   const [row] = await db
     .select()
@@ -97,12 +110,16 @@ export async function getSupplier(
   return row ?? null;
 }
 
-export async function listSupplierVehicles(supplierId: string): Promise<Vehicle[]> {
+export async function listSupplierVehicles(
+  organizationId: string,
+  supplierId: string,
+): Promise<Vehicle[]> {
+  if (!isValidId(supplierId)) return [];
   const db = await getDb();
   return db
     .select()
     .from(vehicles)
-    .where(eq(vehicles.supplierId, supplierId))
+    .where(and(eq(vehicles.organizationId, organizationId), eq(vehicles.supplierId, supplierId)))
     .orderBy(asc(vehicles.plateDisplay));
 }
 

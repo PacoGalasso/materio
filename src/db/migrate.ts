@@ -1,9 +1,8 @@
 import path from "node:path";
 
-import { migrate } from "drizzle-orm/libsql/migrator";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
 
 import { createDatabase, type Database } from "./client";
-import { databaseUrl } from "./config";
 
 export const MIGRATIONS_FOLDER = path.resolve(process.cwd(), "drizzle");
 
@@ -13,13 +12,12 @@ export async function runMigrations(db: Database): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const url = databaseUrl();
-  const { db, client } = await createDatabase(url);
+  const { db, pool } = createDatabase();
   try {
     await runMigrations(db);
-    console.log(`Migrations applied to ${url}`);
+    console.log("Migrations applied.");
   } finally {
-    client.close();
+    await pool.end();
   }
 }
 

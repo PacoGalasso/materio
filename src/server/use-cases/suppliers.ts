@@ -6,6 +6,7 @@ import { withTransaction, type Database, type DatabaseExecutor } from "@/db/clie
 import { suppliers, vehicles, type Supplier } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
 import { formatPlateDisplay, normalizePlate } from "@/domain/weighing";
+import { isValidId } from "@/lib/id";
 
 export interface SupplierInput {
   name: string;
@@ -40,6 +41,7 @@ async function requireSupplier(
   organizationId: string,
   supplierId: string,
 ): Promise<void> {
+  if (!isValidId(supplierId)) throw new DomainError("SUPPLIER_NOT_FOUND");
   const [supplier] = await db
     .select({ id: suppliers.id })
     .from(suppliers)
@@ -121,6 +123,7 @@ export async function removeSupplierVehicle(
   vehicleId: string,
 ): Promise<void> {
   // Tickets keep their plate snapshot; the FK is ON DELETE SET NULL.
+  if (!isValidId(vehicleId)) return;
   await withTransaction(db, async (tx) => {
     await tx
       .delete(vehicles)

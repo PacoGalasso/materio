@@ -8,7 +8,7 @@ import { createTestDatabase, type TestFixture } from "./test-db";
 
 let fx: TestFixture;
 
-/** Drizzle wraps driver errors ("Failed query…"); the SQLite reason sits in the cause chain. */
+/** Drizzle wraps driver errors ("Failed query…"); the Postgres reason sits in the cause chain. */
 function rootMessage(error: unknown): string {
   let current: unknown = error;
   const messages: string[] = [];
@@ -32,8 +32,8 @@ beforeEach(async () => {
   fx = await createTestDatabase();
 });
 
-afterEach(() => {
-  fx.close();
+afterEach(async () => {
+  await fx.close();
 });
 
 describe("database integrity", () => {
@@ -44,7 +44,7 @@ describe("database integrity", () => {
           id: randomUUID(),
           organizationId: fx.organizationId,
           yardId: fx.yardId,
-          materialId: "does-not-exist",
+          materialId: randomUUID(),
           type: "adjustment",
           quantityG: 1000,
           unitValueCtsPerT: 1000,
@@ -77,7 +77,7 @@ describe("database integrity", () => {
         });
       }),
     );
-    expect(message).toMatch(/CHECK constraint failed/i);
+    expect(message).toMatch(/violates check constraint/i);
   });
 
   it("rolls back the whole transaction on failure", async () => {

@@ -12,6 +12,7 @@ import {
 } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
 import { assertUnitPrice } from "@/domain/units";
+import { isValidId } from "@/lib/id";
 
 export interface MaterialInput {
   code: string;
@@ -42,6 +43,7 @@ async function requireMaterial(
   organizationId: string,
   materialId: string,
 ): Promise<void> {
+  if (!isValidId(materialId)) throw new DomainError("MATERIAL_NOT_FOUND");
   const [existing] = await db
     .select({ id: materials.id })
     .from(materials)
@@ -77,6 +79,7 @@ export async function createMaterial(
     });
     await tx.insert(materialPrices).values({
       id: randomUUID(),
+      organizationId,
       materialId: id,
       purchasePriceCtsPerT: input.initialPriceCtsPerT,
       effectiveFrom: now,
@@ -119,6 +122,7 @@ export async function updateMaterialPrice(
     await requireMaterial(tx, organizationId, materialId);
     await tx.insert(materialPrices).values({
       id: randomUUID(),
+      organizationId,
       materialId,
       purchasePriceCtsPerT: input.priceCtsPerT,
       effectiveFrom: input.effectiveFrom,
