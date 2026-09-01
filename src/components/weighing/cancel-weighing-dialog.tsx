@@ -7,6 +7,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Textarea } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { cancelWeighingAction, type CancelWeighingState } from "@/server/actions/weighing";
 
@@ -46,7 +47,7 @@ export function CancelWeighingDialog({
         title={`Annuler la pesée ${reference}`}
         description="La pesée sera conservée dans l'historique avec le statut « Annulée ». Aucun mouvement de stock ne sera créé."
       >
-        <form action={action} className="flex flex-col gap-3">
+        <form action={action} onSubmit={submitWithoutReset(action)} className="flex flex-col gap-3">
           {state && !state.ok && state.formError ? (
             <Notice tone="danger">{state.formError}</Notice>
           ) : null}

@@ -140,7 +140,8 @@ movements and stock always agree. Every company, person and plate is invented.
 
 ```bash
 npm test          # 66 tests: units, rounding, status transitions, inventory, use cases, DB integrity
-npm run test:e2e  # 3 flows: one-pass weighing, arrival then tare, invalid values
+npm run test:e2e  # 6 flows: one-pass weighing, arrival then tare, invalid values, price update,
+                  #          shipment with over-shipping refused, quick supplier + cancellation
 ```
 
 ## Limitations of this local V1

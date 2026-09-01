@@ -5,6 +5,7 @@ import { useActionState, useMemo, useState } from "react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Combobox, type ComboboxOption } from "@/components/ui/combobox";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import type { MaterialCategory, PriceUnit } from "@/db/schema";
 import { unitPriceToDisplayDecimal } from "@/domain/pricing";
@@ -96,7 +97,12 @@ export function NewWeighingForm({
 
   return (
     <>
-      <form action={action} className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]" noValidate>
+      <form
+        action={action}
+        onSubmit={submitWithoutReset(action)}
+        className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem]"
+        noValidate
+      >
         <div className="flex flex-col gap-5">
           {state && !state.ok && state.formError ? (
             <Notice tone="danger">{state.formError}</Notice>

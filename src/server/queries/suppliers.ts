@@ -51,6 +51,39 @@ export async function listSuppliers(
   }));
 }
 
+export interface SupplierActivity {
+  ticketCount: number;
+  completedCount: number;
+  lastDeliveryAt: Date | null;
+  totalPurchasedCts: number;
+  totalReceivedG: number;
+}
+
+/** Ticket activity of one supplier (detail page). */
+export async function getSupplierActivity(supplierId: string): Promise<SupplierActivity> {
+  const db = await getDb();
+  const [row] = await db
+    .select({
+      ticketCount: sql<number>`count(${weighingTickets.id})`,
+      completedCount: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then 1 else 0 end), 0)`,
+      lastDeliveryAt: sql<number | null>`max(${weighingTickets.grossWeighedAt})`,
+      totalPurchasedCts: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.totalAmountCts} else 0 end), 0)`,
+      totalReceivedG: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.netWeightG} else 0 end), 0)`,
+    })
+    .from(weighingTickets)
+    .where(eq(weighingTickets.supplierId, supplierId));
+  return {
+    ticketCount: row?.ticketCount ?? 0,
+    completedCount: row?.completedCount ?? 0,
+    lastDeliveryAt:
+      row?.lastDeliveryAt === null || row?.lastDeliveryAt === undefined
+        ? null
+        : new Date(row.lastDeliveryAt),
+    totalPurchasedCts: row?.totalPurchasedCts ?? 0,
+    totalReceivedG: row?.totalReceivedG ?? 0,
+  };
+}
+
 export async function getSupplier(
   organizationId: string,
   supplierId: string,

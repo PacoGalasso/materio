@@ -101,10 +101,10 @@ export function ActivityChart({ activity, now }: ActivityChartProps) {
       <div className="mt-1.5 flex gap-2" aria-hidden>
         <div className="w-12 shrink-0" />
         <div className="grid flex-1 grid-cols-14 gap-1 sm:gap-2">
-          {activity.map((day) => (
+          {activity.map((day, index) => (
             <div
               key={day.key}
-              className={`text-center text-2xs leading-tight ${day.key === today ? "text-ink font-medium" : "text-ink-muted"}`}
+              className={`text-center text-2xs leading-tight ${day.key === today ? "text-ink font-medium" : "text-ink-muted"} ${index % 2 === 1 ? "invisible sm:visible" : ""}`}
             >
               <div>{formatWeekdayShort(day.day)}</div>
               <div className="tnum hidden sm:block">{formatDayShort(day.day)}</div>

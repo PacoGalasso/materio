@@ -57,7 +57,7 @@ export default async function DashboardPage() {
             detail={countLabel(today.dispatches, "expédition")}
           />
           <Stat
-            label="Valeur estimée du stock"
+            label="Valeur du stock"
             value={formatChf(data.stock.totalValueCts)}
             detail={`${formatWeight(data.stock.totalQuantityG)} au prix de référence`}
           />

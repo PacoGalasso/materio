@@ -5,6 +5,7 @@ import { useActionState } from "react";
 
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import type { Supplier } from "@/db/schema";
 import {
@@ -37,7 +38,12 @@ export function SupplierForm({ supplier, onDone }: SupplierFormProps) {
   const errors = state && !state.ok ? state.fieldErrors : {};
 
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={action}
+      onSubmit={submitWithoutReset(action)}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {state && !state.ok && state.formError ? (
         <Notice tone="danger">{state.formError}</Notice>
       ) : null}

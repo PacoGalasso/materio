@@ -5,6 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import { createSupplierQuickAction, type QuickSupplierState } from "@/server/actions/weighing";
 
@@ -39,7 +40,7 @@ export function QuickSupplierDialog({
       title="Nouveau fournisseur"
       description="Création rapide depuis la pesée. Les coordonnées complètes peuvent être ajoutées plus tard."
     >
-      <form action={action} className="flex flex-col gap-3">
+      <form action={action} onSubmit={submitWithoutReset(action)} className="flex flex-col gap-3">
         {state && !state.ok && state.formError ? (
           <Notice tone="danger">{state.formError}</Notice>
         ) : null}

@@ -13,7 +13,7 @@ import { DataRow, Stat } from "@/components/ui/stat";
 import { Tag } from "@/components/ui/status-badge";
 import { countLabel, formatChf, formatRelativeDateTime, formatWeight } from "@/lib/format";
 import { getWorkspace } from "@/server/context";
-import { getSupplier, listSupplierVehicles, listSuppliers } from "@/server/queries/suppliers";
+import { getSupplier, getSupplierActivity, listSupplierVehicles } from "@/server/queries/suppliers";
 import { listTickets } from "@/server/queries/tickets";
 
 interface PageProps {
@@ -41,9 +41,7 @@ export default async function SupplierPage({ params, searchParams }: PageProps) 
   const [vehicles, tickets, stats] = await Promise.all([
     listSupplierVehicles(supplier.id),
     listTickets(organization.id, { supplierId: supplier.id, page, pageSize: 15 }),
-    listSuppliers(organization.id, { includeInactive: true }).then((rows) =>
-      rows.find((row) => row.id === supplier.id),
-    ),
+    getSupplierActivity(supplier.id),
   ]);
   const address = [
     supplier.street,
@@ -93,28 +91,28 @@ export default async function SupplierPage({ params, searchParams }: PageProps) 
         >
           <Stat
             label="Pesées"
-            value={String(stats?.ticketCount ?? 0)}
-            detail={`${stats?.completedCount ?? 0} terminées`}
+            value={String(stats.ticketCount ?? 0)}
+            detail={`${stats.completedCount ?? 0} terminées`}
           />
           <Stat
             label="Matière reçue"
-            value={formatWeight(stats?.totalReceivedG ?? 0)}
+            value={formatWeight(stats.totalReceivedG ?? 0)}
             detail="pesées terminées"
           />
           <Stat
             label="Achats cumulés"
-            value={formatChf(stats?.totalPurchasedCts ?? 0)}
+            value={formatChf(stats.totalPurchasedCts ?? 0)}
             detail="toutes périodes"
           />
           <Stat
             label="Dernière livraison"
             value={
-              stats?.lastDeliveryAt
+              stats.lastDeliveryAt
                 ? (formatRelativeDateTime(stats.lastDeliveryAt, now).split(" · ")[0] ?? "—")
                 : "—"
             }
             detail={
-              stats?.lastDeliveryAt
+              stats.lastDeliveryAt
                 ? formatRelativeDateTime(stats.lastDeliveryAt, now)
                 : "aucune pesée"
             }

@@ -7,6 +7,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import type { PriceUnit } from "@/domain/pricing";
 import { unitPriceToDisplayDecimal } from "@/domain/pricing";
@@ -41,7 +42,12 @@ function PriceFormBody({
   );
   const errors = state && !state.ok ? state.fieldErrors : {};
   return (
-    <form action={action} className="flex flex-col gap-3" noValidate>
+    <form
+      action={action}
+      onSubmit={submitWithoutReset(action)}
+      className="flex flex-col gap-3"
+      noValidate
+    >
       {state && !state.ok && state.formError ? (
         <Notice tone="danger">{state.formError}</Notice>
       ) : null}

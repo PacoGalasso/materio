@@ -7,6 +7,7 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import type { Organization, Yard } from "@/db/schema";
 import {
@@ -29,7 +30,12 @@ export function OrganizationForm({ organization }: { organization: Organization 
   );
   const errors = state && !state.ok ? state.fieldErrors : {};
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={action}
+      onSubmit={submitWithoutReset(action)}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {state?.ok ? (
         <Notice tone="success">Informations de l&apos;entreprise enregistrées.</Notice>
       ) : null}
@@ -174,7 +180,12 @@ export function YardForm({ yard }: { yard: Yard }) {
   );
   const errors = state && !state.ok ? state.fieldErrors : {};
   return (
-    <form action={action} className="flex flex-col gap-4" noValidate>
+    <form
+      action={action}
+      onSubmit={submitWithoutReset(action)}
+      className="flex flex-col gap-4"
+      noValidate
+    >
       {state?.ok ? <Notice tone="success">Site enregistré.</Notice> : null}
       {state && !state.ok && state.formError ? (
         <Notice tone="danger">{state.formError}</Notice>
@@ -224,7 +235,12 @@ function ResetDemoBody({ onDone }: { onDone: () => void }) {
   );
   const errors = state && !state.ok ? state.fieldErrors : {};
   return (
-    <form action={action} className="flex flex-col gap-3" noValidate>
+    <form
+      action={action}
+      onSubmit={submitWithoutReset(action)}
+      className="flex flex-col gap-3"
+      noValidate
+    >
       {state && !state.ok && state.formError ? (
         <Notice tone="danger">{state.formError}</Notice>
       ) : null}

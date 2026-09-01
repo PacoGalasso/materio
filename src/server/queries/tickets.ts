@@ -188,6 +188,27 @@ export async function listOpenTickets(organizationId: string, limit = 50): Promi
     .limit(limit);
 }
 
+/** Latest completed tickets (dashboard). */
+export async function listRecentCompletedTickets(
+  organizationId: string,
+  limit = 8,
+): Promise<TicketRow[]> {
+  const db = await getDb();
+  return db
+    .select(ROW_SELECT)
+    .from(weighingTickets)
+    .innerJoin(suppliers, eq(suppliers.id, weighingTickets.supplierId))
+    .innerJoin(materials, eq(materials.id, weighingTickets.materialId))
+    .where(
+      and(
+        eq(weighingTickets.organizationId, organizationId),
+        eq(weighingTickets.status, "completed"),
+      ),
+    )
+    .orderBy(desc(weighingTickets.completedAt), desc(weighingTickets.reference))
+    .limit(limit);
+}
+
 export interface TicketDetail {
   ticket: WeighingTicket;
   supplier: Supplier;

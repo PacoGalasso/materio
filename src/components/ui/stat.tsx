@@ -18,7 +18,7 @@ export function Stat({ label, value, detail, tone = "default", className }: Stat
       <span className="label-caps">{label}</span>
       <span
         className={cn(
-          "tnum truncate text-2xl leading-none font-semibold",
+          "tnum truncate text-xl leading-none font-semibold 2xl:text-2xl",
           tone === "warning" && "text-warning-text",
           tone === "positive" && "text-positive-text",
         )}

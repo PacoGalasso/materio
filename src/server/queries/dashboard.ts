@@ -1,11 +1,11 @@
-import { and, desc, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 
 import { getDb } from "@/db/client";
-import { inventoryMovements, materials, suppliers, weighingTickets } from "@/db/schema";
+import { inventoryMovements, weighingTickets } from "@/db/schema";
 import { addDays, dayKey, startOfDay } from "@/lib/time";
 
 import { getStockOverview, type StockOverview } from "./inventory";
-import { listOpenTickets, type TicketRow } from "./tickets";
+import { listOpenTickets, listRecentCompletedTickets, type TicketRow } from "./tickets";
 
 export interface DailyActivity {
   day: Date;
@@ -79,37 +79,7 @@ export async function getDashboard(
         ),
       listOpenTickets(organizationId, 20),
       getStockOverview(organizationId, now),
-      db
-        .select({
-          id: weighingTickets.id,
-          reference: weighingTickets.reference,
-          status: weighingTickets.status,
-          grossWeighedAt: weighingTickets.grossWeighedAt,
-          completedAt: weighingTickets.completedAt,
-          supplierId: weighingTickets.supplierId,
-          supplierName: suppliers.name,
-          plateSnapshot: weighingTickets.plateSnapshot,
-          materialId: weighingTickets.materialId,
-          materialName: materials.name,
-          materialCategory: materials.category,
-          priceUnit: materials.priceUnit,
-          grossWeightG: weighingTickets.grossWeightG,
-          tareWeightG: weighingTickets.tareWeightG,
-          netWeightG: weighingTickets.netWeightG,
-          unitPriceCtsPerT: weighingTickets.unitPriceCtsPerT,
-          totalAmountCts: weighingTickets.totalAmountCts,
-        })
-        .from(weighingTickets)
-        .innerJoin(suppliers, eq(suppliers.id, weighingTickets.supplierId))
-        .innerJoin(materials, eq(materials.id, weighingTickets.materialId))
-        .where(
-          and(
-            eq(weighingTickets.organizationId, organizationId),
-            eq(weighingTickets.status, "completed"),
-          ),
-        )
-        .orderBy(desc(weighingTickets.completedAt))
-        .limit(8),
+      listRecentCompletedTickets(organizationId, 8),
     ]);
 
   const receiptsToday = todayMovements.filter((m) => m.type === "receipt");

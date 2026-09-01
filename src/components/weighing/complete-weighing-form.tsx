@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import type { PriceUnit } from "@/domain/pricing";
 import { unitPriceToDisplayDecimal } from "@/domain/pricing";
@@ -54,7 +55,12 @@ export function CompleteWeighingForm({
   });
 
   return (
-    <form action={action} className="flex flex-col gap-3" noValidate>
+    <form
+      action={action}
+      onSubmit={submitWithoutReset(action)}
+      className="flex flex-col gap-3"
+      noValidate
+    >
       {state && !state.ok && state.formError ? (
         <Notice tone="danger">{state.formError}</Notice>
       ) : null}

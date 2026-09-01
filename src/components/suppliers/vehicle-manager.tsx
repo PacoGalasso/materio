@@ -6,6 +6,7 @@ import { useActionState, useState, useTransition } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { submitWithoutReset } from "@/components/ui/form";
 import { Notice } from "@/components/ui/notice";
 import type { Vehicle } from "@/db/schema";
 import {
@@ -78,6 +79,7 @@ export function VehicleManager({ supplierId, vehicles }: VehicleManagerProps) {
       <form
         key={formKey}
         action={action}
+        onSubmit={submitWithoutReset(action)}
         className="border-line-soft flex flex-col gap-2 border-t pt-3"
         noValidate
       >
