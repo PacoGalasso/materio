@@ -140,9 +140,18 @@ movements and stock always agree. Every company, person and plate is invented.
 
 ```bash
 npm test          # 66 tests: units, rounding, status transitions, inventory, use cases, DB integrity
-npm run test:e2e  # 6 flows: one-pass weighing, arrival then tare, invalid values, price update,
-                  #          shipment with over-shipping refused, quick supplier + cancellation
+npm run test:e2e  # 8 flows: one-pass weighing, arrival then tare, invalid values, price update,
+                  #          shipment with over-shipping refused, quick supplier + cancellation,
+                  #          ticket list filters/search/sort/pagination, N shortcut
 ```
+
+## Screenshots
+
+Captured from the seeded demo workspace at 1440×900.
+
+| Tableau de bord                                    | Nouvelle pesée                                       | Bulletin de pesée                                  |
+| -------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------- |
+| ![Tableau de bord](docs/screenshots/dashboard.png) | ![Nouvelle pesée](docs/screenshots/new-weighing.png) | ![Bulletin de pesée](docs/screenshots/receipt.png) |
 
 ## Limitations of this local V1
 

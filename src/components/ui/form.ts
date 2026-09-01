@@ -11,7 +11,10 @@ export function submitWithoutReset(formAction: (formData: FormData) => void) {
   return (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const submitter = (event.nativeEvent as SubmitEvent).submitter;
-    const formData = new FormData(event.currentTarget, submitter instanceof HTMLElement ? submitter : null);
+    const formData = new FormData(
+      event.currentTarget,
+      submitter instanceof HTMLElement ? submitter : null,
+    );
     startTransition(() => formAction(formData));
   };
 }
