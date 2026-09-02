@@ -44,7 +44,7 @@ jobs:
       # transcribed wrong) per the project's dependency-pinning policy for trusted publishers.
       # Third-party actions, if any are ever added here, must be pinned to a commit SHA.
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
