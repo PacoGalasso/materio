@@ -49,14 +49,15 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       dependencies: ["setup"],
-      testIgnore: [/auth\.setup\.ts/, /auth\.spec\.ts/],
+      testIgnore: [/auth\.setup\.ts/, /auth\.spec\.ts/, /redirects\.spec\.ts/],
     },
     {
       // Runs signed out, on purpose: login/redirect/cross-tenant-denial checks must not
-      // reuse the authenticated storage state above.
+      // reuse the authenticated storage state above — redirects.spec.ts in particular signs
+      // itself in and out via the `request` fixture and must start with zero cookies.
       name: "chromium-unauthenticated",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
-      testMatch: /auth\.spec\.ts/,
+      testMatch: [/auth\.spec\.ts/, /redirects\.spec\.ts/],
     },
   ],
 });

@@ -62,7 +62,14 @@ describe("database integrity", () => {
         .values({ id: randomUUID(), organizationId: fx.organizationId, name: "OK Sàrl" });
     });
     expect(await rejectionOf(insertOrphan())).toMatch(/FOREIGN KEY/i);
-    expect(await fx.db.select().from(inventoryMovements)).toHaveLength(0);
+    // Every fixture shares one Postgres database (see src/db/test-db.ts), so this must scope
+    // to this fixture's own organization rather than counting every row in the table.
+    expect(
+      await fx.db
+        .select()
+        .from(inventoryMovements)
+        .where(eq(inventoryMovements.organizationId, fx.organizationId)),
+    ).toHaveLength(0);
   });
 
   it("rejects negative prices at the database level", async () => {
