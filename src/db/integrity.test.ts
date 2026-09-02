@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 
+import { eq } from "drizzle-orm";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { withTransaction } from "./client";
@@ -89,7 +90,10 @@ describe("database integrity", () => {
         throw new Error("boom");
       }),
     ).rejects.toThrow("boom");
-    const rows = await fx.db.select().from(suppliers);
+    const rows = await fx.db
+      .select()
+      .from(suppliers)
+      .where(eq(suppliers.organizationId, fx.organizationId));
     expect(rows.map((row) => row.name)).not.toContain("Partiel");
   });
 });

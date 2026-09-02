@@ -108,8 +108,17 @@ describe("createWeighingTicket", () => {
     await expect(create({ tareWeightG: 9_000_000 })).rejects.toMatchObject({
       code: "TARE_EXCEEDS_GROSS",
     });
-    expect(await fx.db.select().from(weighingTickets)).toHaveLength(0);
-    expect(await fx.db.select().from(inventoryMovements)).toHaveLength(0);
+    // Every fixture shares one Postgres database (see src/db/test-db.ts), so assertions must
+    // scope to this fixture's own organization rather than counting every row in the table.
+    expect(
+      await fx.db.select().from(weighingTickets).where(eq(weighingTickets.organizationId, fx.organizationId)),
+    ).toHaveLength(0);
+    expect(
+      await fx.db
+        .select()
+        .from(inventoryMovements)
+        .where(eq(inventoryMovements.organizationId, fx.organizationId)),
+    ).toHaveLength(0);
   });
 
   it("rejects missing or inactive supplier and material", async () => {
@@ -131,7 +140,10 @@ describe("createWeighingTicket", () => {
   it("reuses a known vehicle by normalized plate", async () => {
     const a = await create({ plate: "VD 123 456" });
     const b = await create({ plate: "vd-123456" });
-    const rows = await fx.db.select({ vehicleId: weighingTickets.vehicleId }).from(weighingTickets);
+    const rows = await fx.db
+      .select({ vehicleId: weighingTickets.vehicleId })
+      .from(weighingTickets)
+      .where(eq(weighingTickets.organizationId, fx.organizationId));
     expect(rows.map((r) => r.vehicleId)).toEqual([rows[0]?.vehicleId, rows[0]?.vehicleId]);
     expect(a.id).not.toBe(b.id);
   });
