@@ -52,10 +52,10 @@ export async function getStockOverview(
       isActive: materials.isActive,
       referencePriceCtsPerT: materials.currentPurchasePriceCtsPerT,
       quantityG: sql<number>`coalesce(sum(${inventoryMovements.quantityG}), 0)`,
-      lastMovementAt: sql<number | null>`max(${inventoryMovements.occurredAt})`,
+      lastMovementAt: sql<Date | null>`max(${inventoryMovements.occurredAt})`,
       movementCount: sql<number>`count(${inventoryMovements.id})`,
-      receivedLast7dG: sql<number>`coalesce(sum(case when ${inventoryMovements.quantityG} > 0 and ${inventoryMovements.occurredAt} >= ${sevenDaysAgo.getTime()} then ${inventoryMovements.quantityG} else 0 end), 0)`,
-      dispatchedLast7dG: sql<number>`coalesce(sum(case when ${inventoryMovements.quantityG} < 0 and ${inventoryMovements.occurredAt} >= ${sevenDaysAgo.getTime()} then -${inventoryMovements.quantityG} else 0 end), 0)`,
+      receivedLast7dG: sql<number>`coalesce(sum(case when ${inventoryMovements.quantityG} > 0 and ${inventoryMovements.occurredAt} >= ${sevenDaysAgo} then ${inventoryMovements.quantityG} else 0 end), 0)`,
+      dispatchedLast7dG: sql<number>`coalesce(sum(case when ${inventoryMovements.quantityG} < 0 and ${inventoryMovements.occurredAt} >= ${sevenDaysAgo} then -${inventoryMovements.quantityG} else 0 end), 0)`,
     })
     .from(materials)
     .leftJoin(inventoryMovements, eq(inventoryMovements.materialId, materials.id))

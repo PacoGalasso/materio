@@ -12,7 +12,7 @@ import { Pagination } from "@/components/ui/pagination";
 import { DataRow, Stat } from "@/components/ui/stat";
 import { Tag } from "@/components/ui/status-badge";
 import { countLabel, formatChf, formatRelativeDateTime, formatWeight } from "@/lib/format";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { getSupplier, getSupplierActivity, listSupplierVehicles } from "@/server/queries/suppliers";
 import { listTickets } from "@/server/queries/tickets";
 
@@ -23,7 +23,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const supplier = await getSupplier(organization.id, id);
   return { title: supplier?.name ?? "Fournisseur" };
 }
@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function SupplierPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const supplier = await getSupplier(organization.id, id);
   if (!supplier) notFound();
 

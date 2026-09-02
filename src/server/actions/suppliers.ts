@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db/client";
-import { getWorkspace } from "@/server/context";
+import { requireOrgContext } from "@/server/context";
 import {
   addSupplierVehicle,
   createSupplier,
@@ -28,13 +28,13 @@ export async function createSupplierAction(
   _previous: SupplierFormState | null,
   formData: FormData,
 ): Promise<SupplierFormState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_SUPPLIERS");
   const db = await getDb();
   const parsed = parseSupplierForm(formData);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   let created: { id: string };
   try {
-    created = await createSupplier(db, organization.id, parsed.value);
+    created = await createSupplier(db, organization.id, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error);
   }
@@ -47,12 +47,12 @@ export async function updateSupplierAction(
   _previous: SupplierFormState | null,
   formData: FormData,
 ): Promise<SupplierFormState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_SUPPLIERS");
   const db = await getDb();
   const parsed = parseSupplierForm(formData);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   try {
-    await updateSupplier(db, organization.id, supplierId, parsed.value);
+    await updateSupplier(db, organization.id, supplierId, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error);
   }
@@ -67,7 +67,7 @@ export async function addVehicleAction(
   _previous: VehicleFormState | null,
   formData: FormData,
 ): Promise<VehicleFormState> {
-  const { organization } = await getWorkspace();
+  const { organization } = await requireOrgContext("MANAGE_SUPPLIERS");
   const db = await getDb();
   const parsed = vehicleSchema.safeParse({
     plate: formString(formData, "plate"),
@@ -87,7 +87,7 @@ export async function removeVehicleAction(
   supplierId: string,
   vehicleId: string,
 ): Promise<ActionResult<undefined>> {
-  const { organization } = await getWorkspace();
+  const { organization } = await requireOrgContext("MANAGE_SUPPLIERS");
   const db = await getDb();
   try {
     await removeSupplierVehicle(db, organization.id, vehicleId);

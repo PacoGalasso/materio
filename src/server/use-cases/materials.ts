@@ -13,6 +13,7 @@ import {
 import { DomainError } from "@/domain/errors";
 import { assertUnitPrice } from "@/domain/units";
 import { isValidId } from "@/lib/id";
+import { writeAuditEvent } from "@/server/audit";
 
 export interface MaterialInput {
   code: string;
@@ -55,6 +56,7 @@ async function requireMaterial(
 export async function createMaterial(
   db: Database,
   organizationId: string,
+  actorUserId: string,
   input: MaterialInput & { initialPriceCtsPerT: number },
 ): Promise<Material> {
   assertUnitPrice(input.initialPriceCtsPerT, "price");
@@ -85,6 +87,14 @@ export async function createMaterial(
       effectiveFrom: now,
       note: "Prix initial",
     });
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "MATERIAL_CREATED",
+      entityType: "material",
+      entityId: id,
+      metadata: { code: input.code, name: input.name },
+    });
   });
   const [created] = await db.select().from(materials).where(eq(materials.id, id)).limit(1);
   if (!created) throw new Error("Material insert did not persist");
@@ -95,12 +105,21 @@ export async function updateMaterial(
   db: Database,
   organizationId: string,
   materialId: string,
+  actorUserId: string,
   input: MaterialInput,
 ): Promise<Material> {
   await withTransaction(db, async (tx) => {
     await requireMaterial(tx, organizationId, materialId);
     await assertUniqueCode(tx, organizationId, input.code, materialId);
     await tx.update(materials).set(input).where(eq(materials.id, materialId));
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "MATERIAL_UPDATED",
+      entityType: "material",
+      entityId: materialId,
+      metadata: { code: input.code, name: input.name },
+    });
   });
   const [updated] = await db.select().from(materials).where(eq(materials.id, materialId)).limit(1);
   if (!updated) throw new Error("Material update did not persist");
@@ -115,6 +134,7 @@ export async function updateMaterialPrice(
   db: Database,
   organizationId: string,
   materialId: string,
+  actorUserId: string,
   input: { priceCtsPerT: number; effectiveFrom: Date; note: string },
 ): Promise<void> {
   assertUnitPrice(input.priceCtsPerT, "price");
@@ -132,5 +152,13 @@ export async function updateMaterialPrice(
       .update(materials)
       .set({ currentPurchasePriceCtsPerT: input.priceCtsPerT })
       .where(eq(materials.id, materialId));
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "MATERIAL_PRICE_CHANGED",
+      entityType: "material",
+      entityId: materialId,
+      metadata: { priceCtsPerT: input.priceCtsPerT },
+    });
   });
 }

@@ -16,6 +16,7 @@
  */
 import { relations, sql } from "drizzle-orm";
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -119,6 +120,9 @@ export const account = pgTable(
     id: text("id").primaryKey(),
     accountId: text("account_id").notNull(),
     providerId: text("provider_id").notNull(),
+    /** Synthetic issuer namespace Better Auth uses to disambiguate providers, e.g.
+     * "local:credential" — see `createLocalAccountIssuer` from "better-auth/db". */
+    issuer: text("issuer").notNull(),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
@@ -152,6 +156,15 @@ export const verification = pgTable(
   },
   (t) => [index("verification_identifier_idx").on(t.identifier)],
 );
+
+/** Login/API abuse throttling, persisted here (not in-process memory) so the limit holds
+ * even if the app is ever run as more than one instance. See src/server/auth.ts. */
+export const rateLimit = pgTable("rate_limit", {
+  id: text("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  count: integer("count").notNull(),
+  lastRequest: bigint("last_request", { mode: "number" }).notNull(),
+});
 
 // --- Business tables -----------------------------------------------------------------------
 

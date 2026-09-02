@@ -1,12 +1,12 @@
 import { OrganizationForm, ResetDemoDialog, YardForm } from "@/components/settings/settings-forms";
 import { PageHeader, SectionTitle } from "@/components/ui/page-header";
 import { DataRow } from "@/components/ui/stat";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 
 export const metadata = { title: "Paramètres" };
 
 export default async function SettingsPage() {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard } = await getOrgContext();
 
   return (
     <>

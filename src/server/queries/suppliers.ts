@@ -32,7 +32,7 @@ export async function listSuppliers(
       supplier: suppliers,
       ticketCount: sql<number>`count(${weighingTickets.id})`,
       completedCount: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then 1 else 0 end), 0)`,
-      lastDeliveryAt: sql<number | null>`max(${weighingTickets.grossWeighedAt})`,
+      lastDeliveryAt: sql<Date | null>`max(${weighingTickets.grossWeighedAt})`,
       totalPurchasedCts: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.totalAmountCts} else 0 end), 0)`,
       totalReceivedG: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.netWeightG} else 0 end), 0)`,
     })
@@ -73,7 +73,7 @@ export async function getSupplierActivity(
     .select({
       ticketCount: sql<number>`count(${weighingTickets.id})`,
       completedCount: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then 1 else 0 end), 0)`,
-      lastDeliveryAt: sql<number | null>`max(${weighingTickets.grossWeighedAt})`,
+      lastDeliveryAt: sql<Date | null>`max(${weighingTickets.grossWeighedAt})`,
       totalPurchasedCts: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.totalAmountCts} else 0 end), 0)`,
       totalReceivedG: sql<number>`coalesce(sum(case when ${weighingTickets.status} = 'completed' then ${weighingTickets.netWeightG} else 0 end), 0)`,
     })

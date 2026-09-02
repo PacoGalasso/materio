@@ -5,6 +5,7 @@ import {
   Building2,
   LayoutDashboard,
   Layers,
+  LogOut,
   Menu,
   Plus,
   Scale,
@@ -16,12 +17,15 @@ import { useState } from "react";
 
 import { Kbd } from "@/components/ui/kbd";
 import { cn } from "@/lib/cn";
+import { signOutAction } from "@/server/actions/auth";
 
 import { NavLink } from "./nav-link";
 
 interface SidebarProps {
   organizationName: string;
   yardName: string;
+  userName: string;
+  roleLabel: string;
 }
 
 const NAV = [
@@ -93,12 +97,26 @@ function NewWeighingLink({ onNavigate }: { onNavigate?: () => void }) {
   );
 }
 
-function WorkspaceFooter({ organizationName, yardName }: SidebarProps) {
+function WorkspaceFooter({ organizationName, yardName, userName, roleLabel }: SidebarProps) {
   return (
     <div className="border-rail-line mt-auto border-t px-2.5 pt-3">
       <p className="text-ink-inverse truncate text-xs font-medium">{organizationName}</p>
       <p className="text-rail-text-muted truncate text-2xs">{yardName}</p>
-      <p className="text-rail-text-muted mt-2 text-2xs">Espace de démonstration local</p>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <p className="text-rail-text-muted min-w-0 truncate text-2xs">
+          {userName} · {roleLabel}
+        </p>
+        <form action={signOutAction}>
+          <button
+            type="submit"
+            aria-label="Se déconnecter"
+            title="Se déconnecter"
+            className="text-rail-text hover:bg-rail-hover hover:text-ink-inverse flex size-6 shrink-0 items-center justify-center rounded-xs focus-visible:outline-ink-inverse"
+          >
+            <LogOut className="size-3.5" aria-hidden />
+          </button>
+        </form>
+      </div>
     </div>
   );
 }

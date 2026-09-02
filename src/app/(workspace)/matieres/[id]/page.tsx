@@ -22,7 +22,7 @@ import {
   toTimeInputValue,
 } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/labels";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { getMaterialStockG, listMovements } from "@/server/queries/inventory";
 import { getMaterial, getMaterialActivity, listPriceHistory } from "@/server/queries/materials";
 import { stockValueCts } from "@/domain/inventory";
@@ -33,14 +33,14 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const material = await getMaterial(organization.id, id);
   return { title: material?.name ?? "Matière" };
 }
 
 export default async function MaterialPage({ params }: PageProps) {
   const { id } = await params;
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const material = await getMaterial(organization.id, id);
   if (!material) notFound();
 

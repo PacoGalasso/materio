@@ -23,7 +23,7 @@ afterEach(async () => {
 
 describe("inventory movements", () => {
   it("adjusts, dispatches and never goes below zero", async () => {
-    await recordAdjustment(fx.db, fx.organizationId, fx.yardId, {
+    await recordAdjustment(fx.db, fx.organizationId, fx.yardId, fx.ownerUserId, {
       materialId: fx.steelId,
       quantityG: 10_000_000,
       unitValueCtsPerT: 18_500,
@@ -32,7 +32,7 @@ describe("inventory movements", () => {
     });
     expect(await getMaterialStockG(fx.organizationId, fx.steelId)).toBe(10_000_000);
 
-    await recordDispatch(fx.db, fx.organizationId, fx.yardId, {
+    await recordDispatch(fx.db, fx.organizationId, fx.yardId, fx.ownerUserId, {
       materialId: fx.steelId,
       quantityG: 4_000_000,
       unitValueCtsPerT: 20_000,
@@ -42,7 +42,7 @@ describe("inventory movements", () => {
     expect(await getMaterialStockG(fx.organizationId, fx.steelId)).toBe(6_000_000);
 
     await expect(
-      recordDispatch(fx.db, fx.organizationId, fx.yardId, {
+      recordDispatch(fx.db, fx.organizationId, fx.yardId, fx.ownerUserId, {
         materialId: fx.steelId,
         quantityG: 6_000_001,
         unitValueCtsPerT: 20_000,
@@ -52,7 +52,7 @@ describe("inventory movements", () => {
     ).rejects.toMatchObject({ code: "STOCK_INSUFFICIENT" });
 
     await expect(
-      recordAdjustment(fx.db, fx.organizationId, fx.yardId, {
+      recordAdjustment(fx.db, fx.organizationId, fx.yardId, fx.ownerUserId, {
         materialId: fx.steelId,
         quantityG: -6_000_001,
         unitValueCtsPerT: 18_500,
@@ -65,8 +65,8 @@ describe("inventory movements", () => {
 
   it("rejects unknown materials", async () => {
     await expect(
-      recordDispatch(fx.db, fx.organizationId, fx.yardId, {
-        materialId: "missing",
+      recordDispatch(fx.db, fx.organizationId, fx.yardId, fx.ownerUserId, {
+        materialId: "00000000-0000-0000-0000-000000000000",
         quantityG: 1,
         unitValueCtsPerT: 1,
         occurredAt: new Date(),
@@ -78,7 +78,7 @@ describe("inventory movements", () => {
 
 describe("updateMaterialPrice", () => {
   it("records history and updates the reference price in centimes per tonne", async () => {
-    await updateMaterialPrice(fx.db, fx.organizationId, fx.copperId, {
+    await updateMaterialPrice(fx.db, fx.organizationId, fx.copperId, fx.ownerUserId, {
       priceCtsPerT: 640_000,
       effectiveFrom: new Date("2026-09-01T00:00:00Z"),
       note: "Hausse marché",
@@ -95,7 +95,7 @@ describe("updateMaterialPrice", () => {
 
   it("refuses negative prices", async () => {
     await expect(
-      updateMaterialPrice(fx.db, fx.organizationId, fx.copperId, {
+      updateMaterialPrice(fx.db, fx.organizationId, fx.copperId, fx.ownerUserId, {
         priceCtsPerT: -1,
         effectiveFrom: new Date(),
         note: "",

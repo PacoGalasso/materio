@@ -30,7 +30,7 @@ import {
   formatWeight,
 } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/labels";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { getStockOverview, listMovements, type StockLine } from "@/server/queries/inventory";
 
 export const metadata = { title: "Stock" };
@@ -62,7 +62,7 @@ function sortLines(lines: StockLine[], sort: StockSortKey, dir: "asc" | "desc"):
 }
 
 export default async function StockPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard } = await getOrgContext();
   const query = await searchParams;
   const sortRaw = Array.isArray(query.tri) ? query.tri[0] : query.tri;
   const sort: StockSortKey = (SORT_KEYS as readonly string[]).includes(sortRaw ?? "")

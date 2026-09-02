@@ -43,12 +43,25 @@ declare global {
   var __matiereDatabase: DatabaseHandle | undefined;
 }
 
-/** Application-wide database handle (lazy singleton). */
-export function getDb(): Promise<Database> {
+function sharedHandle(): DatabaseHandle {
   if (!globalThis.__matiereDatabase) {
     globalThis.__matiereDatabase = createDatabase();
   }
-  return Promise.resolve(globalThis.__matiereDatabase.db);
+  return globalThis.__matiereDatabase;
+}
+
+/** Application-wide database handle (lazy singleton). */
+export function getDb(): Promise<Database> {
+  return Promise.resolve(sharedHandle().db);
+}
+
+/**
+ * Synchronous access to the same lazy singleton as `getDb()`, for callers that must
+ * construct something (like the Better Auth instance) at module init time rather than
+ * inside an async function.
+ */
+export function getDbSync(): Database {
+  return sharedHandle().db;
 }
 
 /**

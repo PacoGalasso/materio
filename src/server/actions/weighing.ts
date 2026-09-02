@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db/client";
-import { getWorkspace } from "@/server/context";
+import { requireOrgContext } from "@/server/context";
 import { getMaterial } from "@/server/queries/materials";
 import { getTicketDetail } from "@/server/queries/tickets";
 import { createSupplier, EMPTY_SUPPLIER_INPUT } from "@/server/use-cases/suppliers";
@@ -42,7 +42,7 @@ export async function createWeighingAction(
   _previous: CreateWeighingState | null,
   formData: FormData,
 ): Promise<CreateWeighingState> {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard, user } = await requireOrgContext("OPERATE_WEIGHING");
   const db = await getDb();
 
   const materialId = formString(formData, "materialId");
@@ -54,7 +54,7 @@ export async function createWeighingAction(
 
   let created: { id: string };
   try {
-    created = await createWeighingTicket(db, organization.id, yard.id, parsed.value);
+    created = await createWeighingTicket(db, organization.id, yard.id, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error, WEIGHING_FIELD_MAP);
   }
@@ -69,7 +69,7 @@ export async function completeWeighingAction(
   _previous: CompleteWeighingState | null,
   formData: FormData,
 ): Promise<CompleteWeighingState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("OPERATE_WEIGHING");
   const db = await getDb();
   const detail = await getTicketDetail(organization.id, ticketId);
   if (!detail) return failure({}, "Pesée introuvable.");
@@ -78,7 +78,7 @@ export async function completeWeighingAction(
   if (!parsed.ok) return failure(parsed.fieldErrors);
 
   try {
-    await completeWeighingTicket(db, organization.id, ticketId, parsed.value);
+    await completeWeighingTicket(db, organization.id, ticketId, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error, WEIGHING_FIELD_MAP);
   }
@@ -94,13 +94,13 @@ export async function cancelWeighingAction(
   _previous: CancelWeighingState | null,
   formData: FormData,
 ): Promise<CancelWeighingState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("OPERATE_WEIGHING");
   const db = await getDb();
   const reason = shortTextSchema(500).safeParse(formString(formData, "reason"));
   if (!reason.success)
     return failure({ reason: reason.error.issues[0]?.message ?? "Motif invalide." });
   try {
-    await cancelWeighingTicket(db, organization.id, ticketId, reason.data);
+    await cancelWeighingTicket(db, organization.id, ticketId, user.id, reason.data);
   } catch (error) {
     return failureFromError(error);
   }
@@ -116,7 +116,7 @@ export async function createSupplierQuickAction(
   _previous: QuickSupplierState | null,
   formData: FormData,
 ): Promise<QuickSupplierState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_SUPPLIERS");
   const db = await getDb();
   const parsed = supplierSchema.safeParse({
     ...EMPTY_SUPPLIER_INPUT,
@@ -132,7 +132,7 @@ export async function createSupplierQuickAction(
     });
   }
   try {
-    const supplier = await createSupplier(db, organization.id, parsed.data);
+    const supplier = await createSupplier(db, organization.id, user.id, parsed.data);
     revalidatePath("/fournisseurs");
     return { ok: true, data: { id: supplier.id, name: supplier.name, city: supplier.city } };
   } catch (error) {

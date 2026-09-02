@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 
 import { getDb } from "@/db/client";
-import { getWorkspace } from "@/server/context";
+import { serverEnv } from "@/env/server";
+import { requireOrgContext } from "@/server/context";
 import { resetDemoWorkspace, updateOrganization, updateYard } from "@/server/use-cases/settings";
 import { formString } from "@/server/validation/form";
 import { parseOrganizationForm, parseYardForm } from "@/server/validation/settings";
@@ -16,12 +17,12 @@ export async function updateOrganizationAction(
   _previous: SettingsFormState | null,
   formData: FormData,
 ): Promise<SettingsFormState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_ORGANIZATION_SETTINGS");
   const db = await getDb();
   const parsed = parseOrganizationForm(formData);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   try {
-    await updateOrganization(db, organization.id, parsed.value);
+    await updateOrganization(db, organization.id, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error);
   }
@@ -33,12 +34,12 @@ export async function updateYardAction(
   _previous: SettingsFormState | null,
   formData: FormData,
 ): Promise<SettingsFormState> {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard, user } = await requireOrgContext("MANAGE_ORGANIZATION_SETTINGS");
   const db = await getDb();
   const parsed = parseYardForm(formData);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   try {
-    await updateYard(db, organization.id, yard.id, parsed.value);
+    await updateYard(db, organization.id, yard.id, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error);
   }
@@ -50,10 +51,19 @@ export type ResetDemoState = ActionResult<{ tickets: number; movements: number }
 
 const RESET_CONFIRMATION = "RÉINITIALISER";
 
+/**
+ * Demo-only tooling: rebuilds the seeded demo dataset. Refused outright in production
+ * (checked first, before authentication even matters) and requires OWNER even in
+ * development — this must never be reachable against real customer data.
+ */
 export async function resetDemoAction(
   _previous: ResetDemoState | null,
   formData: FormData,
 ): Promise<ResetDemoState> {
+  if (serverEnv().NODE_ENV === "production") {
+    return failure({}, "Cette action n'est pas disponible en production.");
+  }
+  await requireOrgContext("RESET_DEMO_DATA");
   if (formString(formData, "confirmation").toUpperCase() !== RESET_CONFIRMATION) {
     return failure({ confirmation: `Saisissez ${RESET_CONFIRMATION} pour confirmer.` });
   }

@@ -16,16 +16,21 @@ export default function WorkspaceError({
     console.error(error);
   }, [error]);
 
-  const notInitialized = error.message.includes("No organization found");
+  // These messages are hand-written, safe, French strings from src/server/context.ts — never
+  // the raw message of an unexpected exception, which could contain internal details.
+  const knownSafeMessages = [
+    "Ce compte n'est rattaché à aucune organisation. Contactez votre administrateur.",
+    "Vous n'avez pas les droits nécessaires pour cette action.",
+  ];
+  const safeMessage = knownSafeMessages.includes(error.message) ? error.message : null;
 
   return (
     <div className="flex flex-1 items-start justify-center p-5">
       <div className="panel w-full max-w-lg p-5">
         <h1 className="mb-3 text-lg">Une erreur est survenue</h1>
         <Notice tone="danger">
-          {notInitialized
-            ? "L'espace de travail n'est pas initialisé. Exécutez « npm run db:setup » puis rechargez la page."
-            : "L'opération n'a pas pu être effectuée. Réessayez ; si le problème persiste, vérifiez la base de données locale."}
+          {safeMessage ??
+            "L'opération n'a pas pu être effectuée. Réessayez ; si le problème persiste, contactez le support."}
         </Notice>
         {error.digest ? (
           <p className="text-ink-faint mt-2 font-mono text-2xs">Référence : {error.digest}</p>

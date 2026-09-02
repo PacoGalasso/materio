@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { getDb } from "@/db/client";
-import { getWorkspace } from "@/server/context";
+import { requireOrgContext } from "@/server/context";
 import { getMaterial } from "@/server/queries/materials";
 import { createMaterial, updateMaterial, updateMaterialPrice } from "@/server/use-cases/materials";
 import { formString, parsePrice } from "@/server/validation/form";
@@ -26,7 +26,7 @@ export async function createMaterialAction(
   _previous: MaterialFormState | null,
   formData: FormData,
 ): Promise<MaterialFormState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_MATERIALS");
   const db = await getDb();
   const parsed = parseMaterialForm(formData);
   if (!parsed.ok) return failure(parsed.fieldErrors);
@@ -35,7 +35,7 @@ export async function createMaterialAction(
 
   let created: { id: string };
   try {
-    created = await createMaterial(db, organization.id, {
+    created = await createMaterial(db, organization.id, user.id, {
       ...parsed.value,
       initialPriceCtsPerT: price.value,
     });
@@ -51,12 +51,12 @@ export async function updateMaterialAction(
   _previous: MaterialFormState | null,
   formData: FormData,
 ): Promise<MaterialFormState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_MATERIALS");
   const db = await getDb();
   const parsed = parseMaterialForm(formData);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   try {
-    await updateMaterial(db, organization.id, materialId, parsed.value);
+    await updateMaterial(db, organization.id, materialId, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error);
   }
@@ -71,14 +71,14 @@ export async function updateMaterialPriceAction(
   _previous: PriceFormState | null,
   formData: FormData,
 ): Promise<PriceFormState> {
-  const { organization } = await getWorkspace();
+  const { organization, user } = await requireOrgContext("MANAGE_MATERIALS");
   const db = await getDb();
   const material = await getMaterial(organization.id, materialId);
   if (!material) return failure({}, "Matière introuvable.");
   const parsed = parsePriceForm(formData, material.priceUnit);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   try {
-    await updateMaterialPrice(db, organization.id, materialId, parsed.value);
+    await updateMaterialPrice(db, organization.id, materialId, user.id, parsed.value);
   } catch (error) {
     return failureFromError(error);
   }

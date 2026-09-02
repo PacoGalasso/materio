@@ -7,6 +7,7 @@ import { suppliers, vehicles, type Supplier } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
 import { formatPlateDisplay, normalizePlate } from "@/domain/weighing";
 import { isValidId } from "@/lib/id";
+import { writeAuditEvent } from "@/server/audit";
 
 export interface SupplierInput {
   name: string;
@@ -53,11 +54,20 @@ async function requireSupplier(
 export async function createSupplier(
   db: Database,
   organizationId: string,
+  actorUserId: string,
   input: SupplierInput,
 ): Promise<Supplier> {
   const id = randomUUID();
   await withTransaction(db, async (tx) => {
     await tx.insert(suppliers).values({ id, organizationId, ...input });
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "SUPPLIER_CREATED",
+      entityType: "supplier",
+      entityId: id,
+      metadata: { name: input.name },
+    });
   });
   const [created] = await db.select().from(suppliers).where(eq(suppliers.id, id)).limit(1);
   if (!created) throw new Error("Supplier insert did not persist");
@@ -68,11 +78,20 @@ export async function updateSupplier(
   db: Database,
   organizationId: string,
   supplierId: string,
+  actorUserId: string,
   input: SupplierInput,
 ): Promise<Supplier> {
   await withTransaction(db, async (tx) => {
     await requireSupplier(tx, organizationId, supplierId);
     await tx.update(suppliers).set(input).where(eq(suppliers.id, supplierId));
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "SUPPLIER_UPDATED",
+      entityType: "supplier",
+      entityId: supplierId,
+      metadata: { name: input.name },
+    });
   });
   const [updated] = await db.select().from(suppliers).where(eq(suppliers.id, supplierId)).limit(1);
   if (!updated) throw new Error("Supplier update did not persist");

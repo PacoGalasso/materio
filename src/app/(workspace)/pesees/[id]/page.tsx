@@ -17,7 +17,7 @@ import {
   toDateInputValue,
   toTimeInputValue,
 } from "@/lib/format";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { getTicketDetail } from "@/server/queries/tickets";
 
 interface PageProps {
@@ -27,7 +27,7 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps) {
   const { id } = await params;
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const detail = await getTicketDetail(organization.id, id);
   return { title: detail ? `Pesée ${detail.ticket.reference}` : "Pesée" };
 }
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: PageProps) {
 export default async function TicketPage({ params, searchParams }: PageProps) {
   const { id } = await params;
   const query = await searchParams;
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const detail = await getTicketDetail(organization.id, id);
   if (!detail) notFound();
 

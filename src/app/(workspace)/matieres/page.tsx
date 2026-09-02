@@ -18,13 +18,13 @@ import {
 import { cn } from "@/lib/cn";
 import { countLabel, formatDate, formatUnitPriceValue } from "@/lib/format";
 import { CATEGORY_LABELS } from "@/lib/labels";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { countMaterialUsage, listMaterials } from "@/server/queries/materials";
 
 export const metadata = { title: "Matières" };
 
 export default async function MaterialsPage() {
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const [materials, usage] = await Promise.all([
     listMaterials(organization.id, { includeInactive: true }),
     countMaterialUsage(organization.id),

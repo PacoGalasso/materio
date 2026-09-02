@@ -7,6 +7,7 @@ import { inventoryMovements, materials } from "@/db/schema";
 import { DomainError } from "@/domain/errors";
 import { adjustmentMovement, dispatchMovement } from "@/domain/inventory";
 import { isValidId } from "@/lib/id";
+import { writeAuditEvent } from "@/server/audit";
 
 export interface DispatchInput {
   materialId: string;
@@ -21,6 +22,7 @@ export async function recordDispatch(
   db: Database,
   organizationId: string,
   yardId: string,
+  actorUserId: string,
   input: DispatchInput,
 ): Promise<{ id: string }> {
   if (!isValidId(input.materialId)) throw new DomainError("MATERIAL_NOT_FOUND");
@@ -59,6 +61,14 @@ export async function recordDispatch(
       occurredAt: input.occurredAt,
       note: input.note,
     });
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "INVENTORY_DISPATCHED",
+      entityType: "inventory_movement",
+      entityId: id,
+      metadata: { materialId: input.materialId, quantityG: input.quantityG },
+    });
     return { id };
   });
 }
@@ -77,6 +87,7 @@ export async function recordAdjustment(
   db: Database,
   organizationId: string,
   yardId: string,
+  actorUserId: string,
   input: AdjustmentInput,
 ): Promise<{ id: string }> {
   if (!isValidId(input.materialId)) throw new DomainError("MATERIAL_NOT_FOUND");
@@ -114,6 +125,14 @@ export async function recordAdjustment(
       ...figures,
       occurredAt: input.occurredAt,
       note: input.note,
+    });
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "INVENTORY_ADJUSTED",
+      entityType: "inventory_movement",
+      entityId: id,
+      metadata: { materialId: input.materialId, quantityG: input.quantityG },
     });
     return { id };
   });

@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/table";
 import { cn } from "@/lib/cn";
 import { countLabel, formatAmount, formatKgValue, formatRelativeDateTime } from "@/lib/format";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { listSuppliers } from "@/server/queries/suppliers";
 
 export const metadata = { title: "Fournisseurs" };
@@ -30,7 +30,7 @@ export default async function SuppliersPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const query = await searchParams;
   const q = (Array.isArray(query.q) ? query.q[0] : query.q)?.trim() ?? "";
   const suppliers = await listSuppliers(organization.id, { q, includeInactive: true });

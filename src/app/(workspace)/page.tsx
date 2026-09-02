@@ -10,13 +10,13 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader, SectionTitle } from "@/components/ui/page-header";
 import { Stat } from "@/components/ui/stat";
 import { countLabel, formatChf, formatDate, formatWeight } from "@/lib/format";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { getDashboard } from "@/server/queries/dashboard";
 
 export const metadata = { title: "Tableau de bord" };
 
 export default async function DashboardPage() {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard } = await getOrgContext();
   const data = await getDashboard(organization.id, new Date());
   const { today, now } = data;
 

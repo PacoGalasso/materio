@@ -4,7 +4,7 @@ import Link from "next/link";
 import { NewWeighingForm } from "@/components/weighing/new-weighing-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { toDateInputValue, toTimeInputValue } from "@/lib/format";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { listMaterials } from "@/server/queries/materials";
 import { listSupplierOptions } from "@/server/queries/suppliers";
 
@@ -15,7 +15,7 @@ interface PageProps {
 }
 
 export default async function NewWeighingPage({ searchParams }: PageProps) {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard } = await getOrgContext();
   const query = await searchParams;
   const initialSupplierId =
     (Array.isArray(query.fournisseur) ? query.fournisseur[0] : query.fournisseur) ?? null;

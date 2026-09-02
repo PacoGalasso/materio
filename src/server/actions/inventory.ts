@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getDb } from "@/db/client";
-import { getWorkspace } from "@/server/context";
+import { requireOrgContext } from "@/server/context";
 import { getMaterial } from "@/server/queries/materials";
 import { recordAdjustment, recordDispatch } from "@/server/use-cases/inventory";
 import { formString } from "@/server/validation/form";
@@ -26,14 +26,14 @@ export async function recordDispatchAction(
   _previous: MovementFormState | null,
   formData: FormData,
 ): Promise<MovementFormState> {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard, user } = await requireOrgContext("MANAGE_INVENTORY");
   const db = await getDb();
   const material = await getMaterial(organization.id, materialId);
   if (!material) return failure({}, "Matière introuvable.");
   const parsed = parseMovementForm(formData, material.priceUnit);
   if (!parsed.ok) return failure(parsed.fieldErrors);
   try {
-    const result = await recordDispatch(db, organization.id, yard.id, {
+    const result = await recordDispatch(db, organization.id, yard.id, user.id, {
       materialId,
       ...parsed.value,
     });
@@ -50,7 +50,7 @@ export async function recordAdjustmentAction(
   _previous: MovementFormState | null,
   formData: FormData,
 ): Promise<MovementFormState> {
-  const { organization, yard } = await getWorkspace();
+  const { organization, yard, user } = await requireOrgContext("MANAGE_INVENTORY");
   const db = await getDb();
   const material = await getMaterial(organization.id, materialId);
   if (!material) return failure({}, "Matière introuvable.");
@@ -58,7 +58,7 @@ export async function recordAdjustmentAction(
   if (!parsed.ok) return failure(parsed.fieldErrors);
   const direction = formString(formData, "direction") === "remove" ? -1 : 1;
   try {
-    const result = await recordAdjustment(db, organization.id, yard.id, {
+    const result = await recordAdjustment(db, organization.id, yard.id, user.id, {
       materialId,
       ...parsed.value,
       quantityG: direction * parsed.value.quantityG,

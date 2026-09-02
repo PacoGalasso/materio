@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { withTransaction, type Database } from "@/db/client";
 import { organizations, yards } from "@/db/schema";
 import { seedDemoWorkspace, type SeedSummary } from "@/db/seed";
+import { writeAuditEvent } from "@/server/audit";
 
 export interface OrganizationInput {
   name: string;
@@ -20,10 +21,19 @@ export interface OrganizationInput {
 export async function updateOrganization(
   db: Database,
   organizationId: string,
+  actorUserId: string,
   input: OrganizationInput,
 ): Promise<void> {
   await withTransaction(db, async (tx) => {
     await tx.update(organizations).set(input).where(eq(organizations.id, organizationId));
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "ORGANIZATION_SETTINGS_UPDATED",
+      entityType: "organization",
+      entityId: organizationId,
+      metadata: {},
+    });
   });
 }
 
@@ -36,6 +46,7 @@ export async function updateYard(
   db: Database,
   organizationId: string,
   yardId: string,
+  actorUserId: string,
   input: YardInput,
 ): Promise<void> {
   await withTransaction(db, async (tx) => {
@@ -43,6 +54,14 @@ export async function updateYard(
       .update(yards)
       .set(input)
       .where(and(eq(yards.organizationId, organizationId), eq(yards.id, yardId)));
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "ORGANIZATION_SETTINGS_UPDATED",
+      entityType: "yard",
+      entityId: yardId,
+      metadata: {},
+    });
   });
 }
 

@@ -33,6 +33,7 @@ import {
 } from "@/domain/weighing";
 import { isValidId } from "@/lib/id";
 import { zonedParts } from "@/lib/time";
+import { writeAuditEvent } from "@/server/audit";
 
 export interface CreateWeighingInput {
   supplierId: string;
@@ -138,6 +139,7 @@ export async function createWeighingTicket(
   db: Database,
   organizationId: string,
   yardId: string,
+  actorUserId: string,
   input: CreateWeighingInput,
 ): Promise<CreateWeighingResult> {
   assertWeight(input.grossWeightG, "grossWeight");
@@ -202,6 +204,15 @@ export async function createWeighingTicket(
       });
     }
 
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "WEIGHING_CREATED",
+      entityType: "weighing_ticket",
+      entityId: id,
+      metadata: { reference, status: figures ? "completed" : "open" },
+    });
+
     return { id, reference, status: figures ? "completed" : "open" };
   });
 }
@@ -242,6 +253,7 @@ export async function completeWeighingTicket(
   db: Database,
   organizationId: string,
   ticketId: string,
+  actorUserId: string,
   input: CompleteWeighingInput,
 ): Promise<{ id: string; reference: string; netWeightG: number; totalAmountCts: number }> {
   assertWeight(input.tareWeightG, "tareWeight");
@@ -295,6 +307,19 @@ export async function completeWeighingTicket(
       note: "",
     });
 
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "WEIGHING_COMPLETED",
+      entityType: "weighing_ticket",
+      entityId: ticket.id,
+      metadata: {
+        reference: ticket.reference,
+        netWeightG: figures.netWeightG,
+        totalAmountCts: figures.totalAmountCts,
+      },
+    });
+
     return {
       id: ticket.id,
       reference: ticket.reference,
@@ -309,6 +334,7 @@ export async function cancelWeighingTicket(
   db: Database,
   organizationId: string,
   ticketId: string,
+  actorUserId: string,
   reason: string,
 ): Promise<{ id: string; reference: string }> {
   return withTransaction(db, async (tx) => {
@@ -323,6 +349,14 @@ export async function cancelWeighingTicket(
       .update(weighingTickets)
       .set({ status: "cancelled", cancelledAt, notes })
       .where(eq(weighingTickets.id, ticket.id));
+    await writeAuditEvent(tx, {
+      organizationId,
+      actorUserId,
+      action: "WEIGHING_CANCELLED",
+      entityType: "weighing_ticket",
+      entityId: ticket.id,
+      metadata: { reference: ticket.reference, reason: reason.trim().slice(0, 200) },
+    });
     return { id: ticket.id, reference: ticket.reference };
   });
 }

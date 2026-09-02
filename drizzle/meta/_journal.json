@@ -8,6 +8,20 @@
       "when": 1788304384237,
       "tag": "0000_big_nemesis",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788305987053,
+      "tag": "0001_add_rate_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788307350873,
+      "tag": "0002_add_account_issuer",
+      "breakpoints": true
     }
   ]
 }

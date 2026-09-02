@@ -14,7 +14,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { countLabel } from "@/lib/format";
-import { getWorkspace } from "@/server/context";
+import { getOrgContext } from "@/server/context";
 import { listMaterials } from "@/server/queries/materials";
 import { listSuppliers } from "@/server/queries/suppliers";
 import { listTickets } from "@/server/queries/tickets";
@@ -26,7 +26,7 @@ export default async function TicketsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const { organization } = await getWorkspace();
+  const { organization } = await getOrgContext();
   const query = parseTicketQuery(await searchParams);
   const [result, materials, suppliers] = await Promise.all([
     listTickets(organization.id, toListFilters(query)),
