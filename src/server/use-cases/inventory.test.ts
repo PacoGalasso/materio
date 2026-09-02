@@ -12,12 +12,9 @@ let fx: TestFixture;
 
 beforeEach(async () => {
   fx = await createTestDatabase();
-  // getMaterialStockG reads through the app-wide handle; point it at the test database.
-  globalThis.__matiereDatabase = { db: fx.db, pool: {} as never };
 });
 
 afterEach(async () => {
-  globalThis.__matiereDatabase = undefined;
   await fx.close();
 });
 

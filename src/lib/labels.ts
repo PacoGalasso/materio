@@ -35,10 +35,12 @@ export const MOVEMENT_TYPE_LABELS: Record<MovementType, string> = {
 export const DOMAIN_ERROR_MESSAGES: Record<DomainErrorCode, string> = {
   WEIGHT_NOT_INTEGER: "Poids invalide.",
   WEIGHT_NEGATIVE: "Le poids ne peut pas être négatif.",
+  WEIGHT_TOO_LARGE: "Poids invraisemblable.",
   TARE_EXCEEDS_GROSS: "La tare ne peut pas dépasser le poids brut.",
   NET_WEIGHT_ZERO: "Le poids net doit être supérieur à zéro.",
   PRICE_NOT_INTEGER: "Prix invalide.",
   PRICE_NEGATIVE: "Le prix ne peut pas être négatif.",
+  PRICE_TOO_LARGE: "Prix invraisemblable.",
   AMOUNT_UNSAFE: "Montant hors limites.",
   TARE_MISSING: "La tare est requise pour terminer la pesée.",
   SUPPLIER_MISSING: "Le fournisseur est requis.",

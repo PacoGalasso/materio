@@ -29,14 +29,26 @@ export function isSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value);
 }
 
+/**
+ * Business-sane upper bounds, not just safe-integer bounds: a single weighing ticket is one
+ * truck, and no scrap-metal purchase price remotely approaches these figures. Without them,
+ * a crafted request could submit a technically-safe-integer but absurd value (or one close
+ * enough to Number.MAX_SAFE_INTEGER to risk overflow once multiplied downstream in
+ * `valueOfQuantityCts`) and have it silently accepted.
+ */
+export const MAX_WEIGHT_G = 200_000_000; // 200 tonnes: well beyond any real truck + trailer.
+export const MAX_UNIT_PRICE_CTS_PER_T = 10_000_000; // CHF 100'000/tonne (CHF 100/kg).
+
 export function assertWeight(value: unknown, field?: string): asserts value is Grams {
   if (!isSafeInteger(value)) throw new DomainError("WEIGHT_NOT_INTEGER", { field });
   if (value < 0) throw new DomainError("WEIGHT_NEGATIVE", { field });
+  if (value > MAX_WEIGHT_G) throw new DomainError("WEIGHT_TOO_LARGE", { field });
 }
 
 export function assertUnitPrice(value: unknown, field?: string): asserts value is CentimesPerTonne {
   if (!isSafeInteger(value)) throw new DomainError("PRICE_NOT_INTEGER", { field });
   if (value < 0) throw new DomainError("PRICE_NEGATIVE", { field });
+  if (value > MAX_UNIT_PRICE_CTS_PER_T) throw new DomainError("PRICE_TOO_LARGE", { field });
 }
 
 /** Rounds a non-negative rational a/b half-up using integer arithmetic only. */

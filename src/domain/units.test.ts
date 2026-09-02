@@ -1,7 +1,43 @@
 import { describe, expect, it } from "vitest";
 
 import { DomainError } from "./errors";
-import { divideRoundHalfUp, valueOfQuantityCts } from "./units";
+import {
+  assertUnitPrice,
+  assertWeight,
+  divideRoundHalfUp,
+  MAX_UNIT_PRICE_CTS_PER_T,
+  MAX_WEIGHT_G,
+  valueOfQuantityCts,
+} from "./units";
+
+describe("assertWeight", () => {
+  it("accepts zero and values at the upper bound", () => {
+    expect(() => assertWeight(0)).not.toThrow();
+    expect(() => assertWeight(MAX_WEIGHT_G)).not.toThrow();
+  });
+
+  it("rejects non-integers, negatives and business-implausible values", () => {
+    expect(() => assertWeight(1.5)).toThrow(DomainError);
+    expect(() => assertWeight(-1)).toThrow(DomainError);
+    expect(() => assertWeight(MAX_WEIGHT_G + 1)).toThrow(DomainError);
+    expect(() => assertWeight(Number.MAX_SAFE_INTEGER)).toThrow(DomainError);
+    expect(() => assertWeight("8420000")).toThrow(DomainError);
+    expect(() => assertWeight(Number.POSITIVE_INFINITY)).toThrow(DomainError);
+  });
+});
+
+describe("assertUnitPrice", () => {
+  it("accepts zero and values at the upper bound", () => {
+    expect(() => assertUnitPrice(0)).not.toThrow();
+    expect(() => assertUnitPrice(MAX_UNIT_PRICE_CTS_PER_T)).not.toThrow();
+  });
+
+  it("rejects non-integers, negatives and business-implausible values", () => {
+    expect(() => assertUnitPrice(1.5)).toThrow(DomainError);
+    expect(() => assertUnitPrice(-1)).toThrow(DomainError);
+    expect(() => assertUnitPrice(MAX_UNIT_PRICE_CTS_PER_T + 1)).toThrow(DomainError);
+  });
+});
 
 describe("divideRoundHalfUp", () => {
   it("rounds half up on exact halves", () => {

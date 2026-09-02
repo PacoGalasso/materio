@@ -5,12 +5,20 @@
  * (including tests running in parallel workers) comes from that fresh id, not from a
  * separate schema or database per test — every query in the app is already tenant-scoped,
  * so unrelated fixtures never interfere. `close()` deletes everything it inserted.
+ *
+ * All fixtures within one test worker share a single underlying connection pool, cached on
+ * `globalThis.__matiereDatabase` — the same slot `getDb()` (src/db/client.ts) reads. This
+ * matters: every function under src/server/queries/*.ts calls `getDb()`, not a db passed in
+ * by the caller, so a test asserting "org A cannot read org B's data" only exercises real
+ * tenant-scoping logic if those query functions are hitting the *same* database the fixture
+ * rows were inserted into. A separate pool per fixture would make every such assertion pass
+ * vacuously (querying an empty, unrelated database) rather than proving anything.
  */
 import { randomUUID } from "node:crypto";
 
 import { eq, inArray } from "drizzle-orm";
 
-import { createDatabase, type Database } from "./client";
+import { createDatabase, type Database, type DatabaseHandle } from "./client";
 import {
   materialPrices,
   materials,
@@ -23,6 +31,17 @@ import {
 
 const TEST_DATABASE_URL =
   process.env.TEST_DATABASE_URL ?? "postgres://matiere:matiere@localhost:55432/matiere_test";
+
+declare global {
+  var __matiereDatabase: DatabaseHandle | undefined;
+}
+
+function sharedTestHandle(): DatabaseHandle {
+  if (!globalThis.__matiereDatabase) {
+    globalThis.__matiereDatabase = createDatabase(TEST_DATABASE_URL);
+  }
+  return globalThis.__matiereDatabase;
+}
 
 export interface TestFixture {
   db: Database;
@@ -39,7 +58,7 @@ export interface TestFixture {
 }
 
 export async function createTestDatabase(): Promise<TestFixture> {
-  const { db, pool } = createDatabase(TEST_DATABASE_URL);
+  const { db } = sharedTestHandle();
 
   const organizationId = randomUUID();
   const yardId = randomUUID();
@@ -126,9 +145,10 @@ export async function createTestDatabase(): Promise<TestFixture> {
   return {
     db,
     close: async () => {
+      // The pool is shared across every fixture in this worker (see sharedTestHandle) and is
+      // never closed here — only the rows this fixture inserted are cleaned up.
       await db.delete(organizations).where(eq(organizations.id, organizationId));
       await db.delete(user).where(inArray(user.id, [ownerUserId]));
-      await pool.end();
     },
     organizationId,
     yardId,
