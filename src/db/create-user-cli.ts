@@ -74,24 +74,34 @@ async function main(): Promise<void> {
     if (!organization) throw new Error(`Organization ${organizationId} not found.`);
 
     const [existing] = await db.select({ id: user.id }).from(user).where(eq(user.email, args.email));
-    if (existing) throw new Error(`A user with email ${args.email} already exists.`);
 
-    const passwordHash = await hashPassword(args.password);
-    const userId = randomUUID();
-    await db.insert(user).values({
-      id: userId,
-      name: args.name,
-      email: args.email,
-      emailVerified: true,
-    });
-    await db.insert(account).values({
-      id: randomUUID(),
-      accountId: userId,
-      providerId: "credential",
-      issuer: createLocalAccountIssuer("credential"),
-      userId,
-      password: passwordHash,
-    });
+    let userId: string;
+    if (existing) {
+      // Idempotent by design: re-running with the same email (e.g. a CI/e2e provisioning
+      // step run on every job) just (re)attaches the existing account to this organization
+      // and role rather than failing — it never touches the existing password/credential.
+      userId = existing.id;
+      await db
+        .delete(organizationMemberships)
+        .where(eq(organizationMemberships.userId, userId));
+    } else {
+      const passwordHash = await hashPassword(args.password);
+      userId = randomUUID();
+      await db.insert(user).values({
+        id: userId,
+        name: args.name,
+        email: args.email,
+        emailVerified: true,
+      });
+      await db.insert(account).values({
+        id: randomUUID(),
+        accountId: userId,
+        providerId: "credential",
+        issuer: createLocalAccountIssuer("credential"),
+        userId,
+        password: passwordHash,
+      });
+    }
     await db.insert(organizationMemberships).values({
       id: randomUUID(),
       organizationId: organization.id,
@@ -99,7 +109,7 @@ async function main(): Promise<void> {
       role: args.role,
     });
 
-    console.log(`Created ${args.email} (${args.role}) on "${organization.name}".`);
+    console.log(`${existing ? "Updated" : "Created"} ${args.email} (${args.role}) on "${organization.name}".`);
   } finally {
     await pool.end();
   }
