@@ -25,9 +25,9 @@
     "check": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
   "dependencies": {
-    "better-auth": "1.7.2",
+    "better-auth": "1.7.3",
     "drizzle-orm": "0.45.2",
-    "lucide-react": "1.39.0",
+    "lucide-react": "1.41.0",
     "next": "16.3.4",
     "pg": "8.23.0",
     "react": "19.2.8",
@@ -35,12 +35,12 @@
     "zod": "4.5.4"
   },
   "devDependencies": {
-    "@playwright/test": "1.56.1",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "4.3.3",
     "@types/node": "22.20.1",
     "@types/pg": "8.23.1",
     "@types/react": "19.2.18",
-    "@types/react-dom": "19.2.5",
+    "@types/react-dom": "19.2.7",
     "drizzle-kit": "0.31.10",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.4",
